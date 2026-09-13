@@ -3,7 +3,7 @@
 # (No credit card needed. gemini-flash-lite-latest has a generous free tier.)
 
 api:
-  key: "YOUR_GEMINI_API_KEY"
+  key: "AQ.Ab8RN6L2Sc7fPNUBdrWilFLGFxyS8WJSzwdDhueEeeXwx-iMXQY"
   model: "gemini-flash-lite-latest"
   max-tokens: 300
   system-prompt: >
