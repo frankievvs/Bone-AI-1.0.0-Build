@@ -93,8 +93,8 @@ public class ChatListener implements Listener {
     for (String word : message.split(" ")) {
         if (line.length() + word.length() + 1 > lineLength && line.length() > 0) {
             player.sendMessage(
-                    ChatColor.RED + "[BoneAI] " +
-                    ChatColor.WHITE + line.toString().trim()
+                    ChatColor.DARK_RED + "[BoneAI] " +
+                    ChatColor.DARK_RED + line.toString().trim()
             );
             line = new StringBuilder();
         }
@@ -104,8 +104,8 @@ public class ChatListener implements Listener {
 
     if (line.length() > 0) {
         player.sendMessage(
-                ChatColor.RED + "[BoneAI] " +
-                ChatColor.WHITE + line.toString().trim()
+                ChatColor.DARK_RED + "[BoneAI] " +
+                ChatColor.DARK_RED + line.toString().trim()
         );
     }
 }
