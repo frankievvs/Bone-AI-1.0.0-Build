@@ -1,28 +1,26 @@
-# BoneAI configuration
-# Get a free Gemini API key at https://aistudio.google.com/apikey
-# (No credit card needed. gemini-flash-lite-latest has a generous free tier.)
+# ==========================================
+#                 BoneAI
+#             Configuration
+# ==========================================
 
-api:
-  key: "AQ.Ab8RN6L2Sc7fPNUBdrWilFLGFxyS8WJSzwdDhueEeeXwx-iMXQY"
+gemini:
+  api-key: "AQ.Ab8RN6Ivrx3dVB5iU9oGrsUyHGGzFy8sN4ILGIlCGXNzNgmcXg"
   model: "gemini-flash-lite-latest"
-  max-tokens: 300
+  max-output-tokens: 300
+
   system-prompt: >
     You are BoneAI, a friendly and witty AI companion living inside a Minecraft SMP server.
     Keep responses short and punchy (2-4 sentences) since this is in-game chat.
     You can answer Minecraft questions (crafting, redstone, mobs, game mechanics), general
-    knowledge questions, and also just have fun casual banter, jokes, or light roleplay with players.
-    Keep things family-friendly and avoid long paragraphs, markdown, or code blocks since chat
-    can't render them.
+    knowledge questions, and also have fun with casual banter, jokes, or light roleplay with players.
+    Keep things family-friendly and avoid long paragraphs, markdown, or code blocks since Minecraft
+    chat can't render them well.
 
 chat:
-  # Word players type to trigger BoneAI in normal chat, e.g. "bone, what's a good enchant for a sword"
   trigger-word: "bone"
-  # If true, the player's trigger message is hidden from other players in chat
   hide-trigger-messages: false
-  # Seconds a player must wait between BoneAI requests
   cooldown-seconds: 5
-  memory:
-    # Remember recent exchanges per player for more natural follow-up conversations
-    enabled: true
-    # Number of messages (each user+assistant exchange adds 2) to keep per player
-    max-messages: 6
+
+memory:
+  enabled: true
+  max-history-messages: 6
