@@ -1,6 +1,6 @@
 # BoneAI
 
-An AI chat companion for your Minecraft SMP, powered by Claude (Anthropic API).
+An AI chat companion for your Minecraft SMP, powered by Gemini.
 Players can ask it questions or just chat for fun, either by command or in normal chat.
 
 ## How it works
