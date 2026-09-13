@@ -39,7 +39,7 @@ public class ConversationManager {
         }
         Deque<ChatMessage> deque = histories.computeIfAbsent(playerId, id -> new ArrayDeque<>());
         deque.addLast(new ChatMessage("user", userMessage));
-        deque.addLast(new ChatMessage("assistant", assistantMessage));
+        deque.addLast(new ChatMessage("model", assistantMessage));
         while (deque.size() > maxHistoryMessages) {
             deque.pollFirst();
         }
