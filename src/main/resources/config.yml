@@ -1,9 +1,10 @@
 # BoneAI configuration
-# Get an Anthropic API key at https://console.anthropic.com/
+# Get a free Gemini API key at https://aistudio.google.com/apikey
+# (No credit card needed. gemini-flash-lite-latest has a generous free tier.)
 
 api:
-  key: "YOUR_ANTHROPIC_API_KEY"
-  model: "claude-haiku-4-5-20251001"
+  key: "YOUR_GEMINI_API_KEY"
+  model: "gemini-flash-lite-latest"
   max-tokens: 300
   system-prompt: >
     You are BoneAI, a friendly and witty AI companion living inside a Minecraft SMP server.
