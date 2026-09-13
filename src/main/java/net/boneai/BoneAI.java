@@ -1,78 +1,136 @@
-package net.boneai;
+package net.boneai.service;
 
-import net.boneai.command.BoneAICommand;
-import net.boneai.command.BoneCommand;
-import net.boneai.listener.ChatListener;
-import net.boneai.service.AnthropicService;
-import net.boneai.service.ConversationManager;
-import org.bukkit.plugin.java.JavaPlugin;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
-public class BoneAI extends JavaPlugin {
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-    private AnthropicService anthropicService;
-    private ConversationManager conversationManager;
-    private ChatListener chatListener;
+/**
+ * Talks to Google's Gemini API (generateContent). The class name is kept as
+ * AnthropicService so nothing else in the plugin needs to change - despite
+ * the name, this calls Gemini, chosen here because it has a genuine free
+ * tier (no credit card, Flash-Lite model has generous daily quotas).
+ */
+public class AnthropicService {
 
-    @Override
-    public void onEnable() {
-        saveDefaultConfig();
-        loadServices();
+    private static final String ENDPOINT_TEMPLATE =
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
 
-        this.chatListener = new ChatListener(this);
-        getServer().getPluginManager().registerEvents(chatListener, this);
+    private final HttpClient httpClient;
+    private final String apiKey;
+    private final String model;
+    private final int maxOutputTokens;
+    private final String systemPrompt;
 
-        BoneCommand boneCommand = new BoneCommand(this);
-        getCommand("bone").setExecutor(boneCommand);
-        getCommand("bone").setTabCompleter(boneCommand);
-
-        getCommand("boneai").setExecutor(new BoneAICommand(this));
-
-        String triggerWord = getConfig().getString("chat.trigger-word", "bone");
-        getLogger().info("BoneAI is online. Players can use /bone <message> or type \""
-                + triggerWord + ", <message>\" in chat.");
+    public AnthropicService(String apiKey, String model, int maxOutputTokens, String systemPrompt) {
+        this.apiKey = apiKey;
+        this.model = model;
+        this.maxOutputTokens = maxOutputTokens;
+        this.systemPrompt = systemPrompt;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
-    @Override
-    public void onDisable() {
-        getLogger().info("BoneAI is shutting down.");
-    }
-
-    /**
-     * (Re)builds the services from the current in-memory config. Called on
-     * enable and whenever /boneai reload runs.
-     */
-    public void loadServices() {
-        String apiKey = getConfig().getString("api.key", "");
-        String model = getConfig().getString("api.model", "claude-haiku-4-5-20251001");
-        int maxTokens = getConfig().getInt("api.max-tokens", 300);
-        String systemPrompt = getConfig().getString("api.system-prompt", "");
-
-        this.anthropicService = new AnthropicService(apiKey, model, maxTokens, systemPrompt);
-
-        boolean memoryEnabled = getConfig().getBoolean("chat.memory.enabled", true);
-        int maxHistory = getConfig().getInt("chat.memory.max-messages", 6);
-        this.conversationManager = new ConversationManager(memoryEnabled, maxHistory);
-
-        if (apiKey == null || apiKey.isBlank() || apiKey.equals("YOUR_ANTHROPIC_API_KEY")) {
-            getLogger().warning("No Anthropic API key set in config.yml - BoneAI will reply with a "
-                    + "setup message until one is added.");
+    public CompletableFuture<String> ask(List<ChatMessage> history, String newUserMessage) {
+        if (apiKey == null || apiKey.isBlank() || apiKey.equals("YOUR_GEMINI_API_KEY")) {
+            return CompletableFuture.completedFuture(
+                    "BoneAI isn't configured yet - ask an admin to set a Gemini API key in config.yml.");
         }
+
+        JsonObject body = new JsonObject();
+
+        JsonArray contents = new JsonArray();
+        for (ChatMessage msg : history) {
+            contents.add(toContentObject(msg.role(), msg.content()));
+        }
+        contents.add(toContentObject("user", newUserMessage));
+        body.add("contents", contents);
+
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            JsonObject systemInstruction = new JsonObject();
+            JsonArray parts = new JsonArray();
+            JsonObject part = new JsonObject();
+            part.addProperty("text", systemPrompt);
+            parts.add(part);
+            systemInstruction.add("parts", parts);
+            body.add("systemInstruction", systemInstruction);
+        }
+
+        JsonObject generationConfig = new JsonObject();
+        generationConfig.addProperty("maxOutputTokens", maxOutputTokens);
+        body.add("generationConfig", generationConfig);
+
+        String endpoint = String.format(ENDPOINT_TEMPLATE, model);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .timeout(Duration.ofSeconds(30))
+                .header("content-type", "application/json")
+                .header("x-goog-api-key", apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+                .build();
+
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(this::parseResponse)
+                .exceptionally(ex -> "BoneAI couldn't reach the AI service right now ("
+                        + ex.getMessage() + ").");
     }
 
-    public void reload() {
-        reloadConfig();
-        loadServices();
+    private JsonObject toContentObject(String role, String text) {
+        JsonObject content = new JsonObject();
+        content.addProperty("role", role);
+        JsonArray parts = new JsonArray();
+        JsonObject part = new JsonObject();
+        part.addProperty("text", text);
+        parts.add(part);
+        content.add("parts", parts);
+        return content;
     }
 
-    public AnthropicService getAnthropicService() {
-        return anthropicService;
-    }
+    private String parseResponse(HttpResponse<String> response) {
+        try {
+            JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
 
-    public ConversationManager getConversationManager() {
-        return conversationManager;
-    }
+            if (json.has("error")) {
+                JsonObject error = json.getAsJsonObject("error");
+                String message = error.has("message") ? error.get("message").getAsString() : "unknown error";
+                String lower = message.toLowerCase();
+                if (lower.contains("quota") || lower.contains("resource_exhausted")) {
+                    return "BoneAI hit the free tier's rate limit - try again in a bit.";
+                }
+                return "BoneAI hit an API error: " + message;
+            }
 
-    public ChatListener getChatListener() {
-        return chatListener;
+            if (!json.has("candidates") || json.getAsJsonArray("candidates").isEmpty()) {
+                return "BoneAI got an empty response. Try again in a moment.";
+            }
+
+            JsonObject firstCandidate = json.getAsJsonArray("candidates").get(0).getAsJsonObject();
+            if (!firstCandidate.has("content")) {
+                return "BoneAI didn't have anything to say. Try rephrasing.";
+            }
+
+            JsonObject content = firstCandidate.getAsJsonObject("content");
+            JsonArray parts = content.getAsJsonArray("parts");
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < parts.size(); i++) {
+                JsonObject part = parts.get(i).getAsJsonObject();
+                if (part.has("text")) {
+                    sb.append(part.get("text").getAsString());
+                }
+            }
+            String text = sb.toString().trim();
+            return text.isEmpty() ? "BoneAI didn't have anything to say. Try rephrasing." : text;
+        } catch (Exception e) {
+            return "BoneAI couldn't parse the AI response (" + e.getMessage() + ").";
+        }
     }
 }
