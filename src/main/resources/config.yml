@@ -4,7 +4,7 @@
 # ==========================================
 
 gemini:
-  api-key: "AQ.Ab8RN6Ivrx3dVB5iU9oGrsUyHGGzFy8sN4ILGIlCGXNzNgmcXg"
+  api-key: "YOUR_GEMINI_API_KEY"
   model: "gemini-flash-lite-latest"
   max-output-tokens: 300
 
@@ -24,3 +24,31 @@ chat:
 memory:
   enabled: true
   max-history-messages: 6
+
+# Passive server-wide memory: watches ALL chat and events (not just messages
+# aimed at BoneAI) and periodically compresses them into long-term knowledge
+# that BoneAI can reference in its answers and spontaneous comments.
+server-memory:
+  enabled: true
+  # How many raw chat/event lines to keep in short-term memory (lost on restart).
+  max-raw-log-lines: 400
+  # How many days a summarized "knowledge" fact is kept before being forgotten.
+  knowledge-retention-days: 3
+  # How often (minutes) recent activity gets compressed into long-term knowledge.
+  summarize-interval-minutes: 20
+
+# Lets BoneAI occasionally comment on its own, without needing the trigger word.
+spontaneous:
+  enabled: true
+  # Roughly how often (minutes) BoneAI checks whether anything's worth commenting on.
+  # It won't necessarily say something every time - it only speaks up if it judges
+  # something is actually worth a comment.
+  interval-minutes: 5
+  system-prompt: >
+    You are BoneAI, observing the ongoing chat and activity on a Minecraft SMP server.
+    You are not being asked a question - you're just watching. Below is a recent snippet
+    of chat and server events. If something in it is funny, dramatic, impressive, or
+    otherwise worth a short spontaneous comment from a witty AI watching the server,
+    respond with just that comment, 1-2 sentences, in a playful voice. Don't summarize
+    what happened - react to it like a person would. If nothing stands out or it's just
+    mundane chatter, respond with exactly: NONE

@@ -43,6 +43,18 @@ public class AnthropicService {
             List<ChatMessage> history,
             String newUserMessage
     ) {
+        return ask(history, newUserMessage, null);
+    }
+
+    /**
+     * Same as ask(), but with extra context (e.g. accumulated server
+     * knowledge) appended to BoneAI's system prompt for this call only.
+     */
+    public CompletableFuture<String> ask(
+            List<ChatMessage> history,
+            String newUserMessage,
+            String extraContext
+    ) {
 
         if (apiKey.isBlank()
                 || apiKey.equals("YOUR_GEMINI_API_KEY")
@@ -75,14 +87,21 @@ public class AnthropicService {
 
         body.add("contents", contents);
 
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
+        String combinedSystemPrompt = systemPrompt == null ? "" : systemPrompt;
+        if (extraContext != null && !extraContext.isBlank()) {
+            combinedSystemPrompt = combinedSystemPrompt
+                    + "\n\nWhat you know about this server so far (use it when relevant, "
+                    + "don't force it into every answer):\n" + extraContext;
+        }
+
+        if (!combinedSystemPrompt.isBlank()) {
 
             JsonObject systemInstruction = new JsonObject();
 
             JsonArray parts = new JsonArray();
 
             JsonObject part = new JsonObject();
-            part.addProperty("text", systemPrompt);
+            part.addProperty("text", combinedSystemPrompt);
 
             parts.add(part);
 
@@ -106,6 +125,49 @@ public class AnthropicService {
                 generationConfig
         );
 
+        return sendBody(body);
+    }
+
+    /**
+     * A one-off call that doesn't use BoneAI's normal personality/system
+     * prompt or conversation history - used for internal tasks like
+     * summarizing the chat log or deciding whether to comment spontaneously.
+     */
+    public CompletableFuture<String> askRaw(
+            String systemPromptOverride,
+            int maxOutputTokensOverride,
+            String userPrompt
+    ) {
+        if (apiKey.isBlank()
+                || apiKey.equals("YOUR_GEMINI_API_KEY")
+                || apiKey.equals("PUT_YOUR_NEW_GEMINI_API_KEY_HERE")) {
+            return CompletableFuture.completedFuture("");
+        }
+
+        JsonObject body = new JsonObject();
+
+        JsonArray contents = new JsonArray();
+        contents.add(toContentObject("user", userPrompt));
+        body.add("contents", contents);
+
+        if (systemPromptOverride != null && !systemPromptOverride.isBlank()) {
+            JsonObject systemInstruction = new JsonObject();
+            JsonArray parts = new JsonArray();
+            JsonObject part = new JsonObject();
+            part.addProperty("text", systemPromptOverride);
+            parts.add(part);
+            systemInstruction.add("parts", parts);
+            body.add("systemInstruction", systemInstruction);
+        }
+
+        JsonObject generationConfig = new JsonObject();
+        generationConfig.addProperty("maxOutputTokens", maxOutputTokensOverride);
+        body.add("generationConfig", generationConfig);
+
+        return sendBody(body);
+    }
+
+    private CompletableFuture<String> sendBody(JsonObject body) {
         String endpoint = String.format(
                 ENDPOINT_TEMPLATE,
                 model

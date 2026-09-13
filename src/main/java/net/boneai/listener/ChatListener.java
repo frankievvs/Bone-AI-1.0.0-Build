@@ -103,7 +103,7 @@ public class ChatListener implements Listener {
                         .getHistory(id);
 
         plugin.getAnthropicService()
-                .ask(history, question)
+                .ask(history, question, plugin.getServerMemory().getKnowledgeContext())
                 .thenAccept(answer ->
                         plugin.getServer()
                                 .getScheduler()

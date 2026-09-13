@@ -23,7 +23,8 @@ public class BoneAICommand implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.YELLOW + "BoneAI commands: /boneai reload, /boneai clear <player>");
+            sender.sendMessage(ChatColor.YELLOW
+                    + "BoneAI commands: /boneai reload, /boneai clear <player>, /boneai knowledge");
             return true;
         }
 
@@ -45,8 +46,22 @@ public class BoneAICommand implements CommandExecutor {
                 plugin.getConversationManager().clearHistory(target.getUniqueId());
                 sender.sendMessage(ChatColor.GREEN + "Cleared BoneAI history for " + target.getName() + ".");
             }
+            case "knowledge" -> {
+                String knowledge = plugin.getServerMemory().getKnowledgeContext();
+                if (knowledge.isBlank()) {
+                    sender.sendMessage(ChatColor.YELLOW
+                            + "BoneAI hasn't learned anything about the server yet.");
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "BoneAI's current knowledge of the server:");
+                    for (String line : knowledge.split("\n")) {
+                        if (!line.isBlank()) {
+                            sender.sendMessage(ChatColor.GRAY + line);
+                        }
+                    }
+                }
+            }
             default -> sender.sendMessage(ChatColor.YELLOW
-                    + "Unknown subcommand. Use /boneai reload or /boneai clear <player>.");
+                    + "Unknown subcommand. Use /boneai reload, /boneai clear <player>, or /boneai knowledge.");
         }
         return true;
     }
