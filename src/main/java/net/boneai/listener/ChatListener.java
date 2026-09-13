@@ -86,18 +86,26 @@ public class ChatListener implements Listener {
         );
     }
 
-    private void sendWrapped(Player player, String message) {
-        int lineLength = 60;
-        StringBuilder line = new StringBuilder();
-        for (String word : message.split(" ")) {
-            if (line.length() + word.length() + 1 > lineLength && line.length() > 0) {
-                player.sendMessage(ChatColor.AQUA + "[BoneAI] " + ChatColor.WHITE + line.toString().trim());
-                line = new StringBuilder();
-            }
-            line.append(word).append(' ');
+   private void sendWrapped(Player player, String message) {
+    int lineLength = 60;
+    StringBuilder line = new StringBuilder();
+
+    for (String word : message.split(" ")) {
+        if (line.length() + word.length() + 1 > lineLength && line.length() > 0) {
+            player.sendMessage(
+                    ChatColor.RED + "[BoneAI] " +
+                    ChatColor.WHITE + line.toString().trim()
+            );
+            line = new StringBuilder();
         }
-        if (line.length() > 0) {
-            player.sendMessage(ChatColor.AQUA + "[BoneAI] " + ChatColor.WHITE + line.toString().trim());
-        }
+
+        line.append(word).append(' ');
+    }
+
+    if (line.length() > 0) {
+        player.sendMessage(
+                ChatColor.RED + "[BoneAI] " +
+                ChatColor.WHITE + line.toString().trim()
+        );
     }
 }
