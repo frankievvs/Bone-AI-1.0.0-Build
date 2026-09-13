@@ -64,26 +64,32 @@ public class ChatListener implements Listener {
     /**
      * Shared entry point used by both the chat trigger and the /bone command.
      */
-    public void handleQuestion(Player player, String question) {
-        UUID id = player.getUniqueId();
-        int cooldownSeconds = plugin.getConfig().getInt("chat.cooldown-seconds", 5);
+        private void sendWrapped(Player player, String message) {
+        int lineLength = 60;
+        StringBuilder line = new StringBuilder();
 
-        if (plugin.getConversationManager().isOnCooldown(id)) {
-            long remaining = plugin.getConversationManager().secondsRemaining(id);
-            player.sendMessage(ChatColor.GRAY + "[BoneAI] " + ChatColor.RED
-                    + "Slow down! Try again in " + remaining + "s.");
-            return;
+        for (String word : message.split(" ")) {
+            if (line.length() + word.length() + 1 > lineLength && line.length() > 0) {
+                player.sendMessage(
+                        ChatColor.WHITE + "[" +
+                        ChatColor.RED + "BoneAI" +
+                        ChatColor.WHITE + "] " +
+                        ChatColor.RED + line.toString().trim()
+                );
+
+                line = new StringBuilder();
+            }
+
+            line.append(word).append(' ');
         }
-        plugin.getConversationManager().applyCooldown(id, cooldownSeconds);
 
-        List<ChatMessage> history = plugin.getConversationManager().getHistory(id);
-
-        plugin.getAnthropicService().ask(history, question).thenAccept(answer ->
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    plugin.getConversationManager().recordExchange(id, question, answer);
-                    sendWrapped(player, answer);
-                })
-        );
+        if (line.length() > 0) {
+            player.sendMessage(
+                    ChatColor.WHITE + "[" +
+                    ChatColor.RED + "BoneAI" +
+                    ChatColor.WHITE + "] " +
+                    ChatColor.RED + line.toString().trim()
+            );
+        }
     }
-
-      [BoneAI] yo what's good my guy 💀
+}
