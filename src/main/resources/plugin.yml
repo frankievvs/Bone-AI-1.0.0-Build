@@ -1,0 +1,24 @@
+name: BoneAI
+version: '1.0.0'
+main: net.boneai.BoneAI
+api-version: '26.2'
+author: YourName
+description: An AI chat companion for your Minecraft SMP, powered by Claude.
+
+commands:
+  bone:
+    description: Ask BoneAI a question or just chat.
+    usage: /bone <message>
+    permission: boneai.use
+  boneai:
+    description: BoneAI admin commands.
+    usage: /boneai <reload|clear>
+    permission: boneai.admin
+
+permissions:
+  boneai.use:
+    description: Allows using BoneAI via chat or command.
+    default: true
+  boneai.admin:
+    description: Allows managing BoneAI (reload config, clear player history).
+    default: op
