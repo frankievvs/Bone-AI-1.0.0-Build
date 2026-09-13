@@ -4,6 +4,7 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import net.boneai.BoneAI;
 import net.boneai.service.ChatMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -115,15 +116,12 @@ public class ChatListener implements Listener {
                                                     answer
                                             );
 
-                                    sendWrapped(
-                                            player,
-                                            answer
-                                    );
+                                    sendWrapped(answer);
                                 })
                 );
     }
 
-    private void sendWrapped(Player player, String message) {
+    private void sendWrapped(String message) {
 
         if (message == null || message.isBlank()) {
             return;
@@ -145,7 +143,7 @@ public class ChatListener implements Listener {
             if (line.length() + word.length() + 1 > lineLength
                     && line.length() > 0) {
 
-                player.sendMessage(
+                Bukkit.broadcastMessage(
                         ChatColor.WHITE + "["
                                 + ChatColor.RED + "BoneAI"
                                 + ChatColor.WHITE + "] "
@@ -161,7 +159,7 @@ public class ChatListener implements Listener {
 
         if (line.length() > 0) {
 
-            player.sendMessage(
+            Bukkit.broadcastMessage(
                     ChatColor.WHITE + "["
                             + ChatColor.RED + "BoneAI"
                             + ChatColor.WHITE + "] "
